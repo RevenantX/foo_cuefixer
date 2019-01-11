@@ -9,12 +9,6 @@ class playlist_cuefixer : public playlist_callback_static
 	void on_items_added(t_size p_playlist, t_size p_start, const pfc::list_base_const_t<metadb_handle_ptr> & p_data, const bit_array & p_selection) override
 	{
 		auto playlistManager = playlist_manager::get();
-		if (playlistManager->playlist_lock_is_present(p_playlist))
-		{
-			console::print("CUEFIXER: playlist locked");
-			return;
-		}
-
 		static_api_ptr_t<playlist_manager> list;
 		std::set<pfc::string> referencedFiles;
 		std::shared_ptr<metadb_handle_list> entriesToRemove(new metadb_handle_list());
@@ -49,6 +43,11 @@ class playlist_cuefixer : public playlist_callback_static
 
 		fb2k::inMainThread([=]
 		{
+			if (playlistManager->playlist_lock_is_present(p_playlist))
+			{
+				console::print("CUEFIXER: playlist locked");
+				return;
+			}
 			pfc::bit_array_bittable table(playlistManager->playlist_get_item_count(p_playlist));
 			for(t_size i = 0; i < itemsToRemoveCount; i++)
 			{
