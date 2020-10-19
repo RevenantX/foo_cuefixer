@@ -1,6 +1,7 @@
 #include <SDK/foobar2000.h>
+#include <Shlwapi.h>
 
-DECLARE_COMPONENT_VERSION("CUE fixer", "1.21", "CUE Fixer by RevenantX");
+DECLARE_COMPONENT_VERSION("CUE fixer", "1.22", "CUE Fixer by RevenantX");
 VALIDATE_COMPONENT_FILENAME("foo_cuefixer.dll");
 
 class playlist_cuefixer : public playlist_callback_static
@@ -39,6 +40,13 @@ class playlist_cuefixer : public playlist_callback_static
 
 			pfc::string fileDir(pfc::io::path::getParent(itemHandle->get_path()));
 			pfc::string referencedFullPath(pfc::io::path::combine(fileDir, refField));
+
+			if(!PathFileExistsA(referencedFullPath.c_str()))
+			{
+				entriesToRemove->add_item(itemHandle);
+				removeCount++;
+				continue;
+			}
 
 			//check against added items
 			for (t_size j = 0; j < addedItemsCount; j++)
