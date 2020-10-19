@@ -7,3 +7,6 @@ Simple component for Foobar2000 to fix CUE/FLAC problems
 # Installation
 1) Open foo_cuefixer.fb2k-component to install it into foobar2000
 2) Remove "*.CUE" from preferencess->shell integration->exclude file types 
+
+# Release version download
+https://github.com/RevenantX/foo_cuefixer/releases
