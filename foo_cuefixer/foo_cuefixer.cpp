@@ -1,6 +1,6 @@
 #include <SDK/foobar2000.h>
 
-DECLARE_COMPONENT_VERSION("CUE fixer", "1.2", "CUE Fixer by RevenantX");
+DECLARE_COMPONENT_VERSION("CUE fixer", "1.21", "CUE Fixer by RevenantX");
 VALIDATE_COMPONENT_FILENAME("foo_cuefixer.dll");
 
 class playlist_cuefixer : public playlist_callback_static
@@ -43,7 +43,7 @@ class playlist_cuefixer : public playlist_callback_static
 			//check against added items
 			for (t_size j = 0; j < addedItemsCount; j++)
 			{
-				if (i != j && metadb::path_compare(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
+				if (metadb::path_compare(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
 				{
 					entriesToRemove->add_item(p_data[j]);
 					removeCount++;
