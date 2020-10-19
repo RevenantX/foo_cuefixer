@@ -11,8 +11,6 @@ class playlist_cuefixer : public playlist_callback_static
 	
 	void on_items_added(t_size p_playlist, t_size p_start, const pfc::list_base_const_t<metadb_handle_ptr> & p_data, const bit_array & p_selection) override
 	{
-		console::printf("CUEFIXER: items added: %d", p_data.get_size());
-
 		auto playlistManager = playlist_manager::get();
 		auto* entriesToRemove = new metadb_handle_list();
 		metadb_info_container::ptr infoRef;
@@ -28,7 +26,14 @@ class playlist_cuefixer : public playlist_callback_static
 				continue;
 			
 			if (!itemHandle->get_info_ref(infoRef))
+			{
+				if (strcmp(pfc::io::path::getFileExtension(itemHandle->get_path()).c_str(), ".cue") == 0)
+				{
+					entriesToRemove->add_item(itemHandle);
+					removeCount++;
+				}
 				continue;
+			}
 			
 			const char* refField = infoRef->info().info_get("referenced_file");
 			if (refField == nullptr)
