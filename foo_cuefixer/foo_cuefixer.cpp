@@ -1,62 +1,75 @@
-#include "stdafx.h"
+#include <SDK/foobar2000.h>
+#include <set>
+#include <vector>
 
-DECLARE_COMPONENT_VERSION("CUE fixer", "1.0", "about message goes here");
+DECLARE_COMPONENT_VERSION("CUE fixer", "1.1", "CUE Fixer by RevenantX");
 VALIDATE_COMPONENT_FILENAME("foo_cuefixer.dll");
 
 class playlist_cuefixer : public playlist_callback_static
 {
-	unsigned get_flags() override { return flag_all; }
+	unsigned get_flags() override { return flag_on_items_added; }
+	
 	void on_items_added(t_size p_playlist, t_size p_start, const pfc::list_base_const_t<metadb_handle_ptr> & p_data, const bit_array & p_selection) override
 	{
+		console::printf("CUEFIXER: items added: %d", p_data.get_size());
+
 		auto playlistManager = playlist_manager::get();
-		static_api_ptr_t<playlist_manager> list;
-		std::set<pfc::string> referencedFiles;
-		std::shared_ptr<metadb_handle_list> entriesToRemove(new metadb_handle_list());
-		file_info_const_impl info;
-		const t_size itemsCount = p_data.get_size();
-		t_size itemsToRemoveCount = 0;
-
-		for (t_size i = 0; i < itemsCount; i++)
+		auto* entriesToRemove = new metadb_handle_list();
+		metadb_info_container::ptr infoRef;
+		t_size addedItemsCount = p_data.get_size();
+		t_size playlistItemsCount = playlistManager->playlist_get_item_count(p_playlist);
+		t_size removeCount = 0;
+		
+		for (t_size i = 0; i < playlistItemsCount; i++)
 		{
-			const metadb_handle_ptr playlistItem = p_data[i];
-			playlistItem->get_info(info);
-			const pfc::string fileDir(pfc::io::path::getParent(playlistItem->get_path()));
-			for (t_size idx = 0; idx < info.info_get_count(); idx++)
-			{
-				if (strcmp(info.info_enum_name(idx), "referenced_file") == 0)
-					referencedFiles.insert(pfc::io::path::combine(fileDir, info.info_enum_value(idx)));
-			}
-		}
+			metadb_handle_ptr itemHandle;
+			
+			if (!playlistManager->playlist_get_item_handle(itemHandle, p_playlist, i))
+				continue;
+			
+			if (!itemHandle->get_info_ref(infoRef))
+				continue;
+			
+			const char* refField = infoRef->info().info_get("referenced_file");
+			if (refField == nullptr)
+				continue;
 
-		for (t_size i = 0; i < itemsCount; i++)
-		{
-			for (const auto &ref : referencedFiles)
+			pfc::string fileDir(pfc::io::path::getParent(itemHandle->get_path()));
+			pfc::string referencedFullPath(pfc::io::path::combine(fileDir, refField));
+
+			//check against added items
+			for (t_size j = 0; j < addedItemsCount; j++)
 			{
-				if (metadb::path_compare(p_data[i]->get_path(), ref.c_str()) == 0)
+				if (i != j && metadb::path_compare(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
 				{
-					entriesToRemove->add_item(p_data[i]);
-					itemsToRemoveCount++;
-					break;
+					entriesToRemove->add_item(p_data[j]);
+					removeCount++;
 				}
 			}
+		}
+		
+		if (removeCount == 0)
+		{
+			delete entriesToRemove;
+			return;
 		}
 
 		fb2k::inMainThread([=]
 		{
 			if (playlistManager->playlist_lock_is_present(p_playlist))
 			{
+				delete entriesToRemove;
 				console::print("CUEFIXER: playlist locked");
 				return;
 			}
 			pfc::bit_array_bittable table(playlistManager->playlist_get_item_count(p_playlist));
-			for(t_size i = 0; i < itemsToRemoveCount; i++)
+			for (t_size i = 0; i < removeCount; i++)
 			{
 				t_size idx;
-				if(playlistManager->playlist_find_item(p_playlist, (*entriesToRemove)[i], idx))
-				{
+				if (playlistManager->playlist_find_item(p_playlist, (*entriesToRemove)[i], idx))
 					table.set(idx, true);
-				}
 			}
+			delete entriesToRemove;
 			playlistManager->playlist_remove_items(p_playlist, table);
 		});
 	}
