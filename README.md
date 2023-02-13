@@ -35,7 +35,7 @@ Get it on GitHub from
    subprojects, edit in Visual Studio the properties for
    **All Configurations**/**All Platforms** under
    **Configuration Properties** -> **C/C++** -> **General**
-   and add the WTL path, `other\path\to\wtl`, to
+   and add the WTL headers path, `other\path\to\wtl\Include`, to
    **Additional Include Directories**.
 
 2. Build the foobar2000 sample project for `Debug` and `Release`. The included
