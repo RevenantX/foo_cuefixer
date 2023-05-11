@@ -39,7 +39,20 @@ class playlist_cuefixer : public playlist_callback_static
 
 			pfc::string fileDir(pfc::io::path::getParent(itemHandle->get_path()));
 			pfc::string referencedFullPath(pfc::io::path::combine(fileDir, refField));
-			if(!filesystem::g_exists(referencedFullPath.subString(7).c_str(), fb2k::noAbort))
+			bool must_remove = false;
+			try
+			{
+				if (!filesystem::g_exists(referencedFullPath.subString(7).c_str(), fb2k::noAbort))
+				{
+					must_remove = true;
+				}
+			}
+			catch (exception_io &)
+			{
+				//probably malformed path from the cue file
+				must_remove = true;
+			}
+			if (must_remove)
 			{
 				entriesToRemove->add_item(itemHandle);
 				removeCount++;
