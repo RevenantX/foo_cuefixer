@@ -1,6 +1,6 @@
 #include <SDK/foobar2000.h>
 
-DECLARE_COMPONENT_VERSION("CUE fixer", "1.3", "CUE Fixer by RevenantX");
+DECLARE_COMPONENT_VERSION("CUE fixer", "1.31", "CUE Fixer by RevenantX");
 VALIDATE_COMPONENT_FILENAME("foo_cuefixer.dll");
 
 class playlist_cuefixer : public playlist_callback_static
