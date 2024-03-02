@@ -78,7 +78,8 @@ class playlist_cuefixer : public playlist_callback_static
 
 		fb2k::inMainThread([=]
 		{
-			if (playlistManager->playlist_lock_is_present(p_playlist))
+			auto lock_filter_mask = playlistManager->playlist_lock_get_filter_mask(p_playlist);
+			if (lock_filter_mask & playlist_lock::filter_remove)
 			{
 				delete entriesToRemove;
 				console::print("CUEFIXER: playlist locked");
