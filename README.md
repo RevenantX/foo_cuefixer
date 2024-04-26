@@ -2,6 +2,8 @@
 
 Simple component for foobar2000 to fix CUE/FLAC problems
 
+[![Made in Ukraine](https://img.shields.io/badge/made_in-ukraine-ffd700.svg?labelColor=0057b7)](https://stand-with-ukraine.pp.ua)
+
 * Removes duplicate song entries that appear when adding adirectory containing
   a `.cue` file that links to timestamps in a base `.flac`/`.wav`/`.ape` file.
 * Removes such duplicates also when adding tracks from media library.
