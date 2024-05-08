@@ -1,6 +1,6 @@
 #include <SDK/foobar2000.h>
 
-DECLARE_COMPONENT_VERSION("CUE fixer", "1.31", "CUE Fixer by RevenantX");
+DECLARE_COMPONENT_VERSION("CUE fixer", "1.32", "CUE Fixer by RevenantX");
 VALIDATE_COMPONENT_FILENAME("foo_cuefixer.dll");
 
 class playlist_cuefixer : public playlist_callback_static
@@ -9,11 +9,11 @@ class playlist_cuefixer : public playlist_callback_static
 	
 	void on_items_added(t_size p_playlist, t_size p_start, const pfc::list_base_const_t<metadb_handle_ptr> & p_data, const bit_array & p_selection) override
 	{
-		auto playlistManager = playlist_manager::get();
+		const auto playlistManager = playlist_manager::get();
 		auto* entriesToRemove = new metadb_handle_list();
 		metadb_info_container::ptr infoRef;
-		t_size addedItemsCount = p_data.get_size();
-		t_size playlistItemsCount = playlistManager->playlist_get_item_count(p_playlist);
+		const t_size addedItemsCount = p_data.get_size();
+		const t_size playlistItemsCount = playlistManager->playlist_get_item_count(p_playlist);
 		t_size removeCount = 0;
 		
 		for (t_size i = 0; i < playlistItemsCount; i++)
@@ -37,8 +37,8 @@ class playlist_cuefixer : public playlist_callback_static
 			if (refField == nullptr)
 				continue;
 
-			pfc::string fileDir(pfc::io::path::getParent(itemHandle->get_path()));
-			pfc::string referencedFullPath(pfc::io::path::combine(fileDir, refField));
+			const pfc::string fileDir(pfc::io::path::getParent(itemHandle->get_path()));
+			const pfc::string referencedFullPath(pfc::io::path::combine(fileDir, refField));
 			bool must_remove = false;
 			try
 			{
@@ -62,7 +62,7 @@ class playlist_cuefixer : public playlist_callback_static
 			//check against added items
 			for (t_size j = 0; j < addedItemsCount; j++)
 			{
-				if (metadb::path_compare(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
+				if(stricmp_utf8(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
 				{
 					entriesToRemove->add_item(p_data[j]);
 					removeCount++;
@@ -78,7 +78,7 @@ class playlist_cuefixer : public playlist_callback_static
 
 		fb2k::inMainThread([=]
 		{
-			auto lock_filter_mask = playlistManager->playlist_lock_get_filter_mask(p_playlist);
+			const auto lock_filter_mask = playlistManager->playlist_lock_get_filter_mask(p_playlist);
 			if (lock_filter_mask & playlist_lock::filter_remove)
 			{
 				delete entriesToRemove;
