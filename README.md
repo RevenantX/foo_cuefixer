@@ -10,6 +10,10 @@ Simple component for foobar2000 to fix CUE/FLAC problems
 * Removes broken `.cue` files that point to missing files (`.flac`/`.wav`/`.ape`
   etc).
 
+## Supported platforms
+
+Windows x86, x64, ARM
+
 ## Installation
 
 1. Open `foo_cuefixer.fb2k-component` to install it into foobar2000
