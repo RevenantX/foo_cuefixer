@@ -262,3 +262,5 @@ __pycache__/
 
 # CMake staging builds
 build*/
+pack
+foo_cuefixer.fb2k-component
