@@ -16,8 +16,10 @@ Windows x86, x64, ARM
 
 ## Installation
 
-1. Open `foo_cuefixer.fb2k-component` to install it into foobar2000
-2. Remove (if it exists) the `*.cue` exclusion from the list at
+Download component from foobar or from releases
+1. https://www.foobar2000.org/components/view/foo_cuefixer
+2. Open `foo_cuefixer.fb2k-component` to install it into foobar2000
+3. Remove (if it exists) the `*.cue` exclusion from the list at
    **Preferencess** -> **Shell Integration** -> **Exclude file types**
 
 ## Release version download
