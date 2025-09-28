@@ -1,16 +1,18 @@
 #include <SDK/foobar2000.h>
 
-DECLARE_COMPONENT_VERSION("CUE fixer", "1.3.2", "CUE Fixer by RevenantX");
+DECLARE_COMPONENT_VERSION("CUE fixer", "1.3.3", "CUE Fixer by RevenantX");
 VALIDATE_COMPONENT_FILENAME("foo_cuefixer.dll");
 
 class playlist_cuefixer : public playlist_callback_static
 {
 	unsigned get_flags() override { return flag_on_items_added; }
+
+	const pfc::string PATH_START = "://";
 	
 	void on_items_added(t_size p_playlist, t_size p_start, const pfc::list_base_const_t<metadb_handle_ptr> & p_data, const bit_array & p_selection) override
 	{
 		const auto playlistManager = playlist_manager::get();
-		auto* entriesToRemove = new metadb_handle_list();
+		metadb_handle_list entriesToRemove;
 		metadb_info_container::ptr infoRef;
 		const t_size addedItemsCount = p_data.get_size();
 		const t_size playlistItemsCount = playlistManager->playlist_get_item_count(p_playlist);
@@ -25,9 +27,9 @@ class playlist_cuefixer : public playlist_callback_static
 			
 			if (!itemHandle->get_info_ref(infoRef))
 			{
-				if (strcmp(pfc::io::path::getFileExtension(itemHandle->get_path()).c_str(), ".cue") == 0)
+				if (pfc::io::path::getFileExtension(itemHandle->get_path()).equals(".cue"))
 				{
-					entriesToRemove->add_item(itemHandle);
+					entriesToRemove.add_item(itemHandle);
 					removeCount++;
 				}
 				continue;
@@ -42,7 +44,9 @@ class playlist_cuefixer : public playlist_callback_static
 			bool must_remove = false;
 			try
 			{
-				if (!filesystem::g_exists(referencedFullPath.subString(7).c_str(), fb2k::noAbort))
+				const auto index = referencedFullPath.indexOf(PATH_START);
+				const auto filePath = referencedFullPath.subString(index+PATH_START.length());
+				if (!filesystem::g_exists(filePath.c_str(), fb2k::noAbort))
 				{
 					must_remove = true;
 				}
@@ -54,7 +58,7 @@ class playlist_cuefixer : public playlist_callback_static
 			}
 			if (must_remove)
 			{
-				entriesToRemove->add_item(itemHandle);
+				entriesToRemove.add_item(itemHandle);
 				removeCount++;
 				continue;
 			}
@@ -64,7 +68,7 @@ class playlist_cuefixer : public playlist_callback_static
 			{
 				if(stricmp_utf8(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
 				{
-					entriesToRemove->add_item(p_data[j]);
+					entriesToRemove.add_item(p_data[j]);
 					removeCount++;
 				}
 			}
@@ -72,7 +76,6 @@ class playlist_cuefixer : public playlist_callback_static
 		
 		if (removeCount == 0)
 		{
-			delete entriesToRemove;
 			return;
 		}
 
@@ -81,7 +84,6 @@ class playlist_cuefixer : public playlist_callback_static
 			const auto lock_filter_mask = playlistManager->playlist_lock_get_filter_mask(p_playlist);
 			if (lock_filter_mask & playlist_lock::filter_remove)
 			{
-				delete entriesToRemove;
 				console::print("CUEFIXER: playlist locked");
 				return;
 			}
@@ -89,10 +91,9 @@ class playlist_cuefixer : public playlist_callback_static
 			for (t_size i = 0; i < removeCount; i++)
 			{
 				t_size idx;
-				if (playlistManager->playlist_find_item(p_playlist, (*entriesToRemove)[i], idx))
+				if (playlistManager->playlist_find_item(p_playlist, entriesToRemove[i], idx))
 					table.set(idx, true);
 			}
-			delete entriesToRemove;
 			playlistManager->playlist_remove_items(p_playlist, table);
 		});
 	}
