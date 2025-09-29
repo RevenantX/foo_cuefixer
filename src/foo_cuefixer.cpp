@@ -16,20 +16,18 @@ class playlist_cuefixer : public playlist_callback_static
 		metadb_info_container::ptr infoRef;
 		const t_size addedItemsCount = p_data.get_size();
 		const t_size playlistItemsCount = playlistManager->playlist_get_item_count(p_playlist);
+		metadb_handle_ptr itemHandle;
 		
 		for (t_size i = 0; i < playlistItemsCount; i++)
 		{
-			metadb_handle_ptr itemHandle;
-			
 			if (!playlistManager->playlist_get_item_handle(itemHandle, p_playlist, i))
 				continue;
 			
 			if (!itemHandle->get_info_ref(infoRef))
 			{
 				if (pfc::io::path::getFileExtension(itemHandle->get_path()).equals(".cue"))
-				{
 					entriesToRemove.add_item(itemHandle);
-				}
+				
 				continue;
 			}
 			
@@ -39,23 +37,22 @@ class playlist_cuefixer : public playlist_callback_static
 
 			const pfc::string fileDir(pfc::io::path::getParent(itemHandle->get_path()));
 			const pfc::string referencedFullPath(pfc::io::path::combine(fileDir, refField));
-			bool must_remove = false;
 			try
 			{
 				const auto index = referencedFullPath.indexOf(PATH_START);
-				const auto filePath = referencedFullPath.subString(index+PATH_START.length());
-				if (!filesystem::g_exists(filePath.c_str(), fb2k::noAbort))
+				if (index != SIZE_MAX)
 				{
-					must_remove = true;
+					const auto filePath = referencedFullPath.subString(index+PATH_START.length());
+					if (!filesystem::g_exists(filePath.c_str(), fb2k::noAbort))
+					{
+						entriesToRemove.add_item(itemHandle);
+						continue;
+					}
 				}
 			}
 			catch (exception_io &)
 			{
 				//probably malformed path from the cue file
-				must_remove = true;
-			}
-			if (must_remove)
-			{
 				entriesToRemove.add_item(itemHandle);
 				continue;
 			}
@@ -64,16 +61,12 @@ class playlist_cuefixer : public playlist_callback_static
 			for (t_size j = 0; j < addedItemsCount; j++)
 			{
 				if(stricmp_utf8(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
-				{
 					entriesToRemove.add_item(p_data[j]);
-				}
 			}
 		}
 		
 		if (entriesToRemove.get_count() == 0)
-		{
 			return;
-		}
 
 		fb2k::inMainThread([=]
 		{
@@ -83,7 +76,7 @@ class playlist_cuefixer : public playlist_callback_static
 				console::print("CUEFIXER: playlist locked");
 				return;
 			}
-			pfc::bit_array_bittable table(playlistManager->playlist_get_item_count(p_playlist));
+			bit_array_bittable table(playlistManager->playlist_get_item_count(p_playlist));
 			for (t_size i = 0; i < entriesToRemove.get_count(); i++)
 			{
 				t_size idx;
