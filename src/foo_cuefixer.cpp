@@ -16,7 +16,6 @@ class playlist_cuefixer : public playlist_callback_static
 		metadb_info_container::ptr infoRef;
 		const t_size addedItemsCount = p_data.get_size();
 		const t_size playlistItemsCount = playlistManager->playlist_get_item_count(p_playlist);
-		t_size removeCount = 0;
 		
 		for (t_size i = 0; i < playlistItemsCount; i++)
 		{
@@ -30,7 +29,6 @@ class playlist_cuefixer : public playlist_callback_static
 				if (pfc::io::path::getFileExtension(itemHandle->get_path()).equals(".cue"))
 				{
 					entriesToRemove.add_item(itemHandle);
-					removeCount++;
 				}
 				continue;
 			}
@@ -59,7 +57,6 @@ class playlist_cuefixer : public playlist_callback_static
 			if (must_remove)
 			{
 				entriesToRemove.add_item(itemHandle);
-				removeCount++;
 				continue;
 			}
 
@@ -69,12 +66,11 @@ class playlist_cuefixer : public playlist_callback_static
 				if(stricmp_utf8(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
 				{
 					entriesToRemove.add_item(p_data[j]);
-					removeCount++;
 				}
 			}
 		}
 		
-		if (removeCount == 0)
+		if (entriesToRemove.get_count() == 0)
 		{
 			return;
 		}
@@ -88,7 +84,7 @@ class playlist_cuefixer : public playlist_callback_static
 				return;
 			}
 			pfc::bit_array_bittable table(playlistManager->playlist_get_item_count(p_playlist));
-			for (t_size i = 0; i < removeCount; i++)
+			for (t_size i = 0; i < entriesToRemove.get_count(); i++)
 			{
 				t_size idx;
 				if (playlistManager->playlist_find_item(p_playlist, entriesToRemove[i], idx))
