@@ -1,6 +1,11 @@
 #include <SDK/foobar2000.h>
 
-DECLARE_COMPONENT_VERSION("CUE fixer", "1.3.3", "CUE Fixer by RevenantX");
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+DECLARE_COMPONENT_VERSION("CUE fixer", "1.3.4", "CUE Fixer by RevenantX");
 VALIDATE_COMPONENT_FILENAME("foo_cuefixer.dll");
 
 class playlist_cuefixer : public playlist_callback_static
@@ -8,15 +13,25 @@ class playlist_cuefixer : public playlist_callback_static
 	unsigned get_flags() override { return flag_on_items_added; }
 
 	const pfc::string PATH_START = "://";
+
+	static std::string lowerCasePath(const char* path)
+	{
+		return pfc::stringToLower(path).c_str();
+	}
 	
 	void on_items_added(t_size p_playlist, t_size p_start, const pfc::list_base_const_t<metadb_handle_ptr> & p_data, const bit_array & p_selection) override
 	{
 		const auto playlistManager = playlist_manager::get();
 		metadb_handle_list entriesToRemove;
+		std::unordered_map<std::string, std::vector<metadb_handle_ptr>> addedItemsByPath;
+		std::unordered_map<std::string, bool> referencedFileExists;
 		metadb_info_container::ptr infoRef;
 		const t_size addedItemsCount = p_data.get_size();
 		const t_size playlistItemsCount = playlistManager->playlist_get_item_count(p_playlist);
 		metadb_handle_ptr itemHandle;
+
+		for (t_size i = 0; i < addedItemsCount; i++)
+			addedItemsByPath[lowerCasePath(p_data[i]->get_path())].push_back(p_data[i]);
 		
 		for (t_size i = 0; i < playlistItemsCount; i++)
 		{
@@ -43,7 +58,11 @@ class playlist_cuefixer : public playlist_callback_static
 				if (index != SIZE_MAX)
 				{
 					const auto filePath = referencedFullPath.subString(index+PATH_START.length());
-					if (!filesystem::g_exists(filePath.c_str(), fb2k::noAbort))
+					const auto cacheKey = lowerCasePath(filePath.c_str());
+					auto exists = referencedFileExists.find(cacheKey);
+					if (exists == referencedFileExists.end())
+						exists = referencedFileExists.emplace(cacheKey, filesystem::g_exists(filePath.c_str(), fb2k::noAbort)).first;
+					if (!exists->second)
 					{
 						entriesToRemove.add_item(itemHandle);
 						continue;
@@ -58,10 +77,11 @@ class playlist_cuefixer : public playlist_callback_static
 			}
 
 			//check against added items
-			for (t_size j = 0; j < addedItemsCount; j++)
+			const auto addedItems = addedItemsByPath.find(lowerCasePath(referencedFullPath.c_str()));
+			if (addedItems != addedItemsByPath.end())
 			{
-				if(stricmp_utf8(p_data[j]->get_path(), referencedFullPath.c_str()) == 0)
-					entriesToRemove.add_item(p_data[j]);
+				for (const auto& addedItem : addedItems->second)
+					entriesToRemove.add_item(addedItem);
 			}
 		}
 		
@@ -77,12 +97,17 @@ class playlist_cuefixer : public playlist_callback_static
 				return;
 			}
 			bit_array_bittable table(playlistManager->playlist_get_item_count(p_playlist));
+			std::unordered_set<const metadb_handle*> entriesToRemoveSet;
 			for (t_size i = 0; i < entriesToRemove.get_count(); i++)
-			{
-				t_size idx;
-				if (playlistManager->playlist_find_item(p_playlist, entriesToRemove[i], idx))
-					table.set(idx, true);
-			}
+				entriesToRemoveSet.insert(entriesToRemove[i].get_ptr());
+
+			metadb_handle_ptr playlistItem;
+			const t_size itemCount = playlistManager->playlist_get_item_count(p_playlist);
+			for (t_size i = 0; i < itemCount; i++)
+				if (playlistManager->playlist_get_item_handle(playlistItem, p_playlist, i) &&
+					entriesToRemoveSet.find(playlistItem.get_ptr()) != entriesToRemoveSet.end())
+					table.set(i, true);
+
 			playlistManager->playlist_remove_items(p_playlist, table);
 		});
 	}
