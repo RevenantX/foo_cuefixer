@@ -2,9 +2,9 @@
 rem change directory to bat file path
 cd %~dp0
 mkdir pack
-mkdir pack\arm64
+mkdir pack\arm64ec
 mkdir pack\x64
-copy buildarm64\src\Release\foo_cuefixer.dll pack\arm64\
+copy buildarm64ec\src\Release\foo_cuefixer.dll pack\arm64ec\
 copy build64\src\Release\foo_cuefixer.dll pack\x64\
 copy build32\src\Release\foo_cuefixer.dll pack\
 cd pack
